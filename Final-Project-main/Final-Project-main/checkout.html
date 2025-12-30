@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout - BulkBase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Include Lucide Icons for professional-looking symbols -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- Google Places JS -->
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAxtrV7X9T_xWgPLeN3YJguW1ylDhFotkQ&libraries=places"></script>
+
+    <style>
+        @keyframes floaty {
+            0% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-12px);
+            }
+
+            100% {
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes gradient-border {
+            0% {
+                border-image-source: linear-gradient(45deg, #00eaff, #006aff);
+            }
+
+            50% {
+                border-image-source: linear-gradient(45deg, #006aff, #00eaff);
+            }
+
+            100% {
+                border-image-source: linear-gradient(45deg, #00eaff, #006aff);
+            }
+        }
+
+        @keyframes fadeSlide {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Custom style for sticky navbar background and shadow */
+        .navbar-sticky {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Keep Google dropdown above everything */
+        .pac-container {
+            z-index: 99999 !important;
+        }
+
+        /* ===============================
+           PREMIUM ANIMATED STEP PROGRESS
+           =============================== */
+        .step-container {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .step-line-track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            height: 4px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-50%);
+            border-radius: 999px;
+        }
+
+        .step-line-fill {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            height: 4px;
+            width: 0%;
+            background: linear-gradient(90deg, #00cfff, #00eaff);
+            box-shadow: 0 0 14px rgba(0, 255, 255, 0.6);
+            transform: translateY(-50%);
+            border-radius: 999px;
+            transition: width 0.55s ease;
+        }
+
+        .step-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 2px solid rgba(255, 255, 255, 0.16);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #e5e7eb;
+            transition:
+                background 0.35s ease,
+                border-color 0.35s ease,
+                transform 0.35s ease,
+                box-shadow 0.35s ease,
+                color 0.35s ease;
+            position: relative;
+            z-index: 10;
+        }
+
+        .step-circle.active {
+            background: #00eaff;
+            border-color: #00eaff;
+            color: #020617;
+            transform: scale(1.18);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
+        }
+
+        .step-circle.completed {
+            background: #009aff;
+            border-color: #00cfff;
+            color: #e5f6ff;
+            transform: scale(1.12);
+            box-shadow: 0 0 14px rgba(0, 170, 255, 0.55);
+        }
+
+        .step-circle.completed::after {
+            content: "✓";
+            position: absolute;
+            font-size: 20px;
+            font-weight: 800;
+            opacity: 0;
+            animation: stepCheck 0.45s ease forwards;
+        }
+
+        @keyframes stepCheck {
+            0% {
+                transform: scale(0.4);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen animate-[fadeIn_0.8s_ease-in-out] overflow-x-hidden relative">
+
+    <!-- Parallax Floating Elements -->
+    <div class="absolute top-10 left-10 w-40 h-40 bg-cyan-500/20 blur-3xl rounded-full animate-[floaty_6s_infinite]">
+    </div>
+    <div
+        class="absolute bottom-20 right-10 w-56 h-56 bg-blue-600/20 blur-3xl rounded-full animate-[floaty_8s_infinite]">
+    </div>
+
+    <!-- Checkout Page Title Section (Now acting as the main header/title) -->
+    <header class="py-10 text-center animate-[fadeSlide_0.7s_ease-out]">
+        <h1 class="text-4xl sm:text-5xl font-extrabold tracking-wide drop-shadow-xl">
+            <span class="text-cyan-400">Secure</span> Checkout
+        </h1>
+        <p class="text-gray-300 mt-2 text-md sm:text-lg">Review your order details and complete payment.</p>
+    </header>
+
+    <!-- Step Progress Bar (FULLY ANIMATED VERSION) -->
+    <div class="max-w-4xl mx-auto mt-8 mb-12 px-6">
+        <div class="step-container">
+            <div class="step-line-track"></div>
+            <div class="step-line-fill" id="step-line"></div>
+
+            <div class="step-circle" id="step1">1</div>
+            <div class="step-circle" id="step2">2</div>
+            <div class="step-circle" id="step3">3</div>
+        </div>
+        <div class="flex justify-between text-sm text-gray-400 mt-3 font-medium">
+            <span>Billing</span><span>Payment</span><span>Review</span>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="max-w-6xl mx-auto px-4 pb-24 grid grid-cols-1 lg:grid-cols-3 gap-12 relative">
+
+        <!-- Billing Form -->
+        <div class="lg:col-span-2 bg-gray-800/60 backdrop-blur-xl border-2 border-transparent rounded-3xl p-8 shadow-2xl animate-[fadeSlide_0.9s_ease-out] hover:scale-[1.01] transition-all duration-300"
+            style="border-image-slice:1; animation:gradient-border 5s infinite; border-width:2px;">
+
+            <h2 class="text-3xl font-bold mb-8">Billing Information</h2>
+
+            <form class="space-y-7" id="checkout-form">
+                <div>
+                    <label class="text-gray-300 text-sm mb-1 block">Full Name</label>
+                    <input type="text" required placeholder="John Doe" id="fullname"
+                        class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600 focus:ring-4 focus:ring-cyan-500/70 transition" />
+                </div>
+
+                <div>
+                    <label class="text-gray-300 text-sm mb-1 block">Email Address</label>
+                    <input type="email" required placeholder="john@example.com" id="email"
+                        class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600 focus:ring-4 focus:ring-cyan-500/70 transition" />
+                </div>
+
+                <div>
+                    <label class="text-gray-300 text-sm mb-1 block">Shipping Address</label>
+                    <input type="text" required placeholder="123 Fitness St, Taipei, Taiwan" id="address"
+                        class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600 focus:ring-4 focus:ring-cyan-500/70 transition" />
+
+                    <!-- Advanced Address Fields -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <label class="text-gray-300 text-sm mb-1 block">Street Number</label>
+                            <input type="text" id="street_number" placeholder="e.g. 101"
+                                class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600">
+                        </div>
+
+                        <div>
+                            <label class="text-gray-300 text-sm mb-1 block">Route (Street Name)</label>
+                            <input type="text" id="route" placeholder="e.g. Xinyi Rd"
+                                class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <label class="text-gray-300 text-sm mb-1 block">District</label>
+                            <input type="text" id="district" placeholder="e.g. Xinyi"
+                                class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600">
+                        </div>
+
+                        <div>
+                            <label class="text-gray-300 text-sm mb-1 block">State / Province</label>
+                            <input type="text" id="state" placeholder="e.g. Taipei City"
+                                class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600">
+                        </div>
+                    </div>
+
+                    <button type="button" id="open-address-book"
+                        class="mt-2 text-sm text-cyan-400 hover:text-cyan-300 underline">
+                        Choose from saved addresses
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="text-gray-300 text-sm mb-1 block">City</label>
+                        <input type="text" required placeholder="Taipei" id="city"
+                            class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600 focus:ring-4 focus:ring-cyan-500/70 transition" />
+                    </div>
+                    <div>
+                        <label class="text-gray-300 text-sm mb-1 block">Postal Code</label>
+                        <input type="text" required placeholder="110" id="postal"
+                            class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600 focus:ring-4 focus:ring-cyan-500/70 transition" />
+                    </div>
+                    <div>
+                        <label class="text-gray-300 text-sm mb-1 block">Country</label>
+                        <input type="text" required placeholder="Taiwan" id="country"
+                            class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600 focus:ring-4 focus:ring-cyan-500/70 transition" />
+                    </div>
+                </div>
+
+                <!-- Payment Method Section -->
+                <h2 class="text-3xl font-bold pt-6">Payment Method</h2>
+
+                <div class="space-y-4">
+                    <div
+                        class="flex items-center space-x-3 bg-gray-800/60 p-4 rounded-xl border border-gray-600 hover:border-cyan-500 transition cursor-pointer">
+                        <input type="radio" name="payment" checked />
+                        <label class="flex items-center space-x-2">
+                            <span>Credit / Debit Card</span>
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" class="w-10" />
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg"
+                                class="w-10" />
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-gray-300 text-sm mb-1 block">Card Number</label>
+                        <input type="text" placeholder="1234 5678 9012 3456"
+                            class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600 focus:ring-4 focus:ring-cyan-500/70 transition" />
+                    </div>
+                    <div>
+                        <label class="text-gray-300 text-sm mb-1 block">Name on Card</label>
+                        <input type="text" placeholder="John Doe"
+                            class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600 focus:ring-4 focus:ring-cyan-500/70 transition" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-gray-300 text-sm mb-1 block">Expiry Date</label>
+                        <input type="text" placeholder="MM/YY"
+                            class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600 focus:ring-4 focus:ring-cyan-500/70 transition" />
+                    </div>
+                    <div>
+                        <label class="text-gray-300 text-sm mb-1 block">CVV</label>
+                        <input type="text" placeholder="123"
+                            class="w-full p-3.5 rounded-xl bg-gray-800/60 border border-gray-600 focus:ring-4 focus:ring-cyan-500/70 transition" />
+                    </div>
+                </div>
+
+                <button type="button" id="place-order-btn"
+                    class="w-full mt-10 py-4 rounded-xl bg-cyan-500 text-black font-extrabold text-xl shadow-xl hover:bg-cyan-400 hover:shadow-cyan-500/50 transition-all">
+                    Place Order
+                </button>
+
+                <!-- Loading Overlay -->
+                <div id="loading-overlay"
+                    class="hidden fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50">
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin">
+                        </div>
+                        <p class="text-cyan-300 text-xl font-semibold">Processing your order...</p>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Glassy Floating Order Summary -->
+        <div
+            class="bg-gray-900/40 backdrop-blur-xl tilt-card p-8 rounded-3xl shadow-2xl border border-gray-700 animate-[fadeSlide_1.1s_ease-out] flex flex-col gap-6">
+
+            <h2 class="text-3xl font-bold">Order Summary</h2>
+
+            <!-- Items List -->
+            <div id="order-summary" class="space-y-4">
+                <!-- Skeleton / items will be injected by JS -->
+            </div>
+
+            <!-- Shipping Selector -->
+            <div class="mt-4">
+                <h3 class="text-xl font-semibold mb-2">Shipping Method</h3>
+                <div class="space-y-3">
+                    <label
+                        class="flex items-center justify-between bg-gray-800/60 p-4 rounded-xl border border-gray-700 hover:border-cyan-500 cursor-pointer transition">
+                        <div>
+                            <span class="font-semibold">Standard Shipping</span>
+                            <p class="text-gray-400 text-sm">5–7 business days</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-cyan-400 font-bold">$0.00</span>
+                            <input type="radio" name="shipping" value="0" checked class="accent-cyan-500" />
+                        </div>
+                    </label>
+
+                    <label
+                        class="flex items-center justify-between bg-gray-800/60 p-4 rounded-xl border border-gray-700 hover:border-cyan-500 cursor-pointer transition">
+                        <div>
+                            <span class="font-semibold">Express Shipping</span>
+                            <p class="text-gray-400 text-sm">2–3 business days</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-cyan-400 font-bold">$7.99</span>
+                            <input type="radio" name="shipping" value="7.99" class="accent-cyan-500" />
+                        </div>
+                    </label>
+
+                    <label
+                        class="flex items-center justify-between bg-gray-800/60 p-4 rounded-xl border border-gray-700 hover:border-cyan-500 cursor-pointer transition">
+                        <div>
+                            <span class="font-semibold">Overnight Shipping</span>
+                            <p class="text-gray-400 text-sm">Arrives tomorrow</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-cyan-400 font-bold">$19.99</span>
+                            <input type="radio" name="shipping" value="19.99" class="accent-cyan-500" />
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Promo Code -->
+            <div class="mt-6">
+                <h3 class="text-xl font-semibold">Promo Code</h3>
+                <div class="flex gap-3 mt-3">
+                    <input id="promo-input" type="text" placeholder="Enter code"
+                        class="flex-1 p-3 rounded-xl bg-gray-800/60 border border-gray-600 focus:ring-4 focus:ring-cyan-500/70 transition" />
+                    <button id="apply-promo"
+                        class="px-5 py-3 rounded-xl bg-cyan-500 text-black font-bold hover:bg-cyan-400 transition">Apply</button>
+                </div>
+                <p id="promo-message" class="text-sm mt-2 text-cyan-400 hidden"></p>
+            </div>
+
+            <!-- Price Summary -->
+            <div class="border-t border-gray-700 pt-4 mt-6 space-y-3 text-lg">
+                <div class="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span id="subtotal" class="text-gray-300">$0.00</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Discount:</span>
+                    <span id="discount" class="text-green-400">-$0.00</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Shipping:</span>
+                    <span id="shipping-cost" class="text-gray-300">$0.00</span>
+                </div>
+                <div class="flex justify-between text-2xl font-extrabold pt-3">
+                    <span>Total:</span>
+                    <span id="order-total" class="text-cyan-400">$0.00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Message Box (Replaces alert()) -->
+    <div id="message-box"
+        class="fixed bottom-5 right-5 z-50 p-4 bg-green-600 text-white rounded-lg shadow-xl hidden transition-opacity duration-300">
+        <p id="message-text" class="font-semibold"></p>
+    </div>
+
+    <!-- Address Book Modal -->
+    <div id="address-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
+        <div
+            class="bg-gray-900/95 rounded-2xl p-6 w-full max-w-lg border border-cyan-500/30 shadow-[0_0_35px_rgba(0,255,255,0.5)]">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Saved Addresses</h3>
+                <button id="close-address-book" class="text-gray-400 hover:text-white text-xl">&times;</button>
+            </div>
+            <div id="address-list" class="space-y-3 max-h-60 overflow-y-auto mb-4">
+                <!-- addresses injected here -->
+            </div>
+            <div class="border-t border-gray-700 pt-4 mt-2">
+                <h4 class="text-lg font-semibold mb-2">Add New Address</h4>
+                <div class="space-y-3">
+                    <input id="addr-label" type="text" placeholder="Label (Home, Dorm, Office)"
+                        class="w-full p-2.5 rounded-xl bg-gray-800/60 border border-gray-700 focus:ring-2 focus:ring-cyan-500/70 text-sm">
+                    <input id="addr-address" type="text" placeholder="Address"
+                        class="w-full p-2.5 rounded-xl bg-gray-800/60 border border-gray-700 focus:ring-2 focus:ring-cyan-500/70 text-sm">
+                    <div class="grid grid-cols-2 gap-3">
+                        <input id="addr-city" type="text" placeholder="City"
+                            class="w-full p-2.5 rounded-xl bg-gray-800/60 border border-gray-700 focus:ring-2 focus:ring-cyan-500/70 text-sm">
+                        <input id="addr-postal" type="text" placeholder="Postal Code"
+                            class="w-full p-2.5 rounded-xl bg-gray-800/60 border border-gray-700 focus:ring-2 focus:ring-cyan-500/70 text-sm">
+                    </div>
+                    <input id="addr-country" type="text" placeholder="Country"
+                        class="w-full p-2.5 rounded-xl bg-gray-800/60 border border-gray-700 focus:ring-2 focus:ring-cyan-500/70 text-sm">
+                    <button id="save-address"
+                        class="w-full mt-1 py-2.5 rounded-xl bg-cyan-500 text-black text-sm font-semibold hover:bg-cyan-400 transition">
+                        Save Address
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ⭐ LUXURY DARK MODE REVIEW MODAL -->
+    <style>
+        /* Luxury dark mode styling */
+        #review-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+        }
+
+        #review-box {
+            width: 92%;
+            max-width: 460px;
+            background: #0f1115;
+            border: 1px solid rgba(0, 255, 255, 0.18);
+            border-radius: 20px;
+            box-shadow: 0 0 35px rgba(0, 255, 255, 0.25);
+            padding: 32px;
+            animation: fadeUp .35s ease;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #review-box h2 {
+            color: white;
+            font-size: 28px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        #review-box p {
+            color: #9ca3af;
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 22px;
+        }
+
+        /* Container for the stars */
+        .star-wrap {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+        /* Base star styling */
+        .star-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            cursor: pointer;
+            transition: 0.25s ease;
+            position: relative;
+        }
+
+        /* Hover preview */
+        .star-btn:hover {
+            transform: scale(1.18);
+            color: #00eaff;
+            border-color: #00eaff;
+            box-shadow: 0 0 14px rgba(0, 255, 255, 0.45);
+        }
+
+        /* Filled stars */
+        .star-btn.filled {
+            background: #00eaff;
+            border-color: #00eaff;
+            color: black;
+            transform: scale(1.15);
+            box-shadow: 0 0 18px rgba(0, 255, 255, 0.7);
+            transition: 0.22s ease-out;
+        }
+
+        /* Nice pulse animation on selection */
+        @keyframes starFillPulse {
+            0% {
+                transform: scale(0.5);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(1.15);
+                opacity: 1;
+            }
+        }
+
+        .star-btn.just-filled {
+            animation: starFillPulse 0.25s ease-out;
+        }
+
+        #review-text {
+            width: 100%;
+            height: 110px;
+            background: #1a1d22;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            padding: 12px;
+            color: white;
+            resize: none;
+            outline: none;
+            font-size: 14px;
+        }
+
+        #review-text:focus {
+            border-color: #00eaff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.35);
+        }
+
+        .review-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn-primary {
+            flex: 1;
+            background: linear-gradient(135deg, #00eaff, #0088ff);
+            color: #0a0c0f;
+            padding: 16px 0;
+            border-radius: 16px;
+            font-weight: 900;
+            font-size: 1rem;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            box-shadow:
+                0 10px 28px rgba(0, 200, 255, 0.28),
+                inset 0 0 10px rgba(255, 255, 255, 0.35),
+                inset 0 -3px 8px rgba(0, 0, 0, 0.35);
+            transition: all .28s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-6px) scale(1.04);
+            box-shadow:
+                0 18px 38px rgba(0, 255, 255, 0.45),
+                inset 0 0 14px rgba(255, 255, 255, 0.45);
+        }
+
+        .btn-secondary {
+            flex: 1;
+            background: #13161b;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            padding: 16px 0;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #d1d5db;
+            text-align: center;
+            cursor: pointer;
+            transition: all .25s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #1c1f25;
+            border-color: rgba(0, 255, 255, 0.3);
+            color: #ffffff;
+            transform: translateY(-4px);
+        }
+    </style>
+
+    <div id="review-overlay">
+        <div id="review-box">
+            <h2>How was your experience?</h2>
+            <p>We value your feedback — rate your checkout experience.</p>
+            <div class="star-wrap" id="lux-stars">
+                <div class="star-btn" data-rate="1">★</div>
+                <div class="star-btn" data-rate="2">★</div>
+                <div class="star-btn" data-rate="3">★</div>
+                <div class="star-btn" data-rate="4">★</div>
+                <div class="star-btn" data-rate="5">★</div>
+            </div>
+            <textarea id="review-text" placeholder="Write your feedback (optional)..."></textarea>
+            <div class="review-actions">
+                <div class="btn-primary" id="lux-submit">Submit</div>
+                <div class="btn-secondary" id="lux-skip">Skip</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const luxOverlay = document.getElementById('review-overlay');
+        const luxStars = document.querySelectorAll('.star-btn');
+        let luxRating = 0;
+
+        luxStars.forEach((btn, index) => {
+            btn.addEventListener('click', () => {
+                luxRating = index + 1;
+
+                luxStars.forEach((s, i) => {
+                    s.classList.remove('filled', 'just-filled');
+
+                    if (i < luxRating) {
+                        s.classList.add('filled');
+
+                        if (i === index) {
+                            s.classList.add('just-filled');
+                        }
+                    }
+                });
+            });
+        });
+
+        document.getElementById('lux-submit').onclick = () => {
+            const txt = document.getElementById('review-text').value.trim();
+            const saved = JSON.parse(localStorage.getItem('bulkbase_reviews') || '[]');
+
+            // Save review
+            saved.unshift({
+                rating: luxRating || 5,
+                text: txt,
+                date: new Date().toISOString()
+            });
+            localStorage.setItem('bulkbase_reviews', JSON.stringify(saved));
+
+            // Show animated toast
+            const toast = document.getElementById('review-toast');
+            toast.style.opacity = "1";
+            toast.style.transform = "translateY(0)";
+
+            // Hide toast after 1.8 sec
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                toast.style.transform = "translateY(20px)";
+            }, 1800);
+
+            // Redirect home after 2.3 sec
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2300);
+        };
+
+
+        document.getElementById('lux-skip').onclick = () => window.location.href = 'index.html';
+
+        window.showLuxuryReview = () => {
+            luxOverlay.style.display = 'flex';
+        };
+    </script>
+
+    <!-- MAIN CHECKOUT LOGIC -->
+    <script type="module">
+        // 🔹 STEP PROGRESS ELEMENTS (new animated version)
+        const step1 = document.getElementById("step1");
+        const step2 = document.getElementById("step2");
+        const step3 = document.getElementById("step3");
+        const stepLine = document.getElementById("step-line");
+
+        function animateStep(stepNum) {
+            [step1, step2, step3].forEach(s => s.classList.remove("active", "completed"));
+
+            if (stepNum === 1) {
+                step1.classList.add("active");
+                stepLine.style.width = "0%";
+            } else if (stepNum === 2) {
+                step1.classList.add("completed");
+                step2.classList.add("active");
+                stepLine.style.width = "50%";
+            } else if (stepNum === 3) {
+                step1.classList.add("completed");
+                step2.classList.add("completed");
+                step3.classList.add("active");
+                stepLine.style.width = "100%";
+            }
+        }
+
+        // initial state
+        animateStep(1);
+
+        const placeOrderBtn = document.getElementById("place-order-btn");
+        const loadingOverlay = document.getElementById("loading-overlay");
+
+        // ⭐ Review elements (legacy – safe no-op)
+        const reviewModal = document.getElementById("review-modal");
+        const reviewStarsWrap = document.getElementById("review-stars");
+        const oldReviewText = document.getElementById("review-text");
+        const submitReviewBtn = document.getElementById("submit-review");
+        const skipReviewBtn = document.getElementById("skip-review");
+        let selectedRating = 0;
+
+        // 🔹 Free-shipping highlight (for auto free shipping & BULK10)
+        function applyFreeShippingHighlight() {
+            const standardOption = document.querySelector('input[name="shipping"][value="0"]');
+
+            if (standardOption) {
+                standardOption.checked = true;
+
+                standardOption.closest("label")
+                    .classList.add("border-cyan-500", "shadow-[0_0_15px_rgba(0,255,255,0.35)]");
+
+                document.querySelectorAll('input[name="shipping"]').forEach(option => {
+                    if (option.value !== "0") {
+                        option.closest("label").classList.add("opacity-50");
+                    } else {
+                        option.closest("label").classList.remove("opacity-50");
+                    }
+                });
+            }
+        }
+
+        // Lucide icons
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+
+        //  Toast / message helper
+        function showMessage(text, isError = false) {
+            const box = document.getElementById('message-box');
+            const messageText = document.getElementById('message-text');
+
+            if (!box || !messageText) return;
+
+            box.classList.add('hidden', 'bg-green-600', 'bg-red-600');
+            box.classList.remove('bg-green-600', 'bg-red-600');
+
+            box.classList.add(isError ? 'bg-red-600' : 'bg-green-600');
+            messageText.textContent = text;
+            box.classList.remove('hidden');
+
+            setTimeout(() => {
+                box.classList.add('hidden');
+            }, 3000);
+        }
+
+        //  Firebase Auth (autofill profile info)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCqTre32R-JxlgqP7HhJ0ZufEeFtFSrOuo",
+            authDomain: "login-page-e809f.firebaseapp.com",
+            projectId: "login-page-e809f",
+            storageBucket: "login-page-e809f.firebasestorage.app",
+            messagingSenderId: "204682041114",
+            appId: "1:204682041114:web:0cff442a3a2a94010fbea3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const fullnameInput = document.getElementById('fullname');
+        const emailInput = document.getElementById('email');
+        const addressInput = document.getElementById('address');
+        const cityInput = document.getElementById('city');
+        const postalInput = document.getElementById('postal');
+        const countryInput = document.getElementById('country');
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) return;
+            if (user.displayName && !fullnameInput.value) fullnameInput.value = user.displayName;
+            if (user.email && !emailInput.value) emailInput.value = user.email;
+
+            if (window.userProfileData) {
+                const data = window.userProfileData;
+                if (data.address && !addressInput.value) addressInput.value = data.address;
+                if (data.city && !cityInput.value) cityInput.value = data.city;
+                if (data.postal && !postalInput.value) postalInput.value = data.postal;
+                if (data.country && !countryInput.value) countryInput.value = data.country;
+            }
+        });
+
+        //  Cart + pricing logic (shared with index via localStorage)
+        const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+        const summaryContainer = document.getElementById("order-summary");
+        const subtotalEl = document.getElementById("subtotal");
+        const discountEl = document.getElementById("discount");
+        const shippingEl = document.getElementById("shipping-cost");
+        const totalEl = document.getElementById("order-total");
+        const shippingOptions = document.querySelectorAll('input[name="shipping"]');
+        const promoInput = document.getElementById('promo-input');
+        const promoMessage = document.getElementById('promo-message');
+
+        let subtotal = 0;
+        let discount = 0;
+        let shipping = 0;
+
+
+
+        //  Skeleton loader while cart is “loading”
+        function showSkeleton() {
+            summaryContainer.innerHTML = `
+            <div class="animate-pulse bg-gray-700/50 h-16 rounded-xl border border-cyan-500/10 shadow-[0_0_20px_rgba(0,255,255,0.25)]"></div>
+            <div class="animate-pulse bg-gray-700/50 h-16 rounded-xl border border-cyan-500/10 shadow-[0_0_20px_rgba(0,255,255,0.25)] mt-3"></div>
+        `;
+        }
+
+        //  Total calculator (subtotal + discount + shipping)
+        function updateTotal() {
+            if (subtotal > 75) {
+                shipping = 0;
+                promoMessage.textContent = "Free Shipping Applied Automatically!";
+                promoMessage.classList.remove("hidden");
+                applyFreeShippingHighlight();
+            }
+
+            discountEl.textContent = `-$${discount.toFixed(2)}`;
+            shippingEl.textContent = `$${shipping.toFixed(2)}`;
+
+            const total = subtotal - discount + shipping;
+            totalEl.textContent = `$${total.toFixed(2)}`;
+        }
+
+        //  Render cart items from localStorage
+        function renderCart() {
+            subtotal = 0;
+
+            if (!cart.length) {
+                summaryContainer.innerHTML = "<p class='text-red-400'>Your cart is empty.</p>";
+                subtotalEl.textContent = "$0.00";
+                discount = 0;
+                updateTotal();
+                return;
+            }
+
+            summaryContainer.innerHTML = "";
+            cart.forEach((item) => {
+                subtotal += item.price * item.quantity;
+
+                summaryContainer.innerHTML += `
+    <div class='flex justify-between bg-gray-800/50 p-4 rounded-xl border border-gray-700'>
+        <div class='flex flex-col'>
+            <span class='font-medium'>${item.name} x${item.quantity}</span>
+            ${item.flavour ? `<span class='text-xs text-cyan-300 mt-1'>Flavour: ${item.flavour}</span>` : ''}
+        </div>
+        <span class='text-cyan-400 font-bold'>$${(item.price * item.quantity).toFixed(2)}</span>
+    </div>
+`;
+            });
+
+
+            subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+            updateTotal();
+        }
+
+        // Init shipping from selected radio
+        const checkedShipping = document.querySelector('input[name="shipping"]:checked');
+        shipping = checkedShipping ? parseFloat(checkedShipping.value) : 0;
+
+        //  Shipping option change listener
+        shippingOptions.forEach((option) => {
+            option.addEventListener("change", () => {
+                shipping = parseFloat(option.value);
+                updateTotal();
+            });
+        });
+
+        //  Promo code logic (FIT10, BULK5, BULK10)
+        document.getElementById("apply-promo").addEventListener("click", () => {
+            const code = promoInput.value.trim().toUpperCase();
+
+            if (code === "FIT10") {
+                discount = subtotal * 0.1;
+                promoMessage.textContent = "FIT10 applied: 10% off";
+                promoMessage.classList.remove("hidden");
+
+            } else if (code === "BULK5") {
+                discount = 5;
+                promoMessage.textContent = "BULK5 applied: $5 off";
+                promoMessage.classList.remove("hidden");
+
+            } else if (code === "BULK10") {
+                shipping = 0;
+                promoMessage.textContent = "BULK10 applied: Free Shipping!";
+                promoMessage.classList.remove("hidden");
+                applyFreeShippingHighlight();
+
+            } else {
+                discount = 0;
+                promoMessage.textContent = "Invalid code";
+                promoMessage.classList.remove("hidden");
+            }
+
+            updateTotal();
+        });
+
+        //  Show skeleton then real cart
+        showSkeleton();
+        setTimeout(renderCart, 400);
+
+        //  3D tilt effect on summary card (desktop only)
+        if (window.matchMedia("(pointer: fine)").matches) {
+            const tiltCards = document.querySelectorAll(".tilt-card");
+            const strength = 14;
+
+            tiltCards.forEach((card) => {
+                card.style.transformStyle = "preserve-3d";
+                card.style.transition = "transform 180ms ease-out, box-shadow 180ms ease-out";
+
+                card.addEventListener("mousemove", (event) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = event.clientX - rect.left;
+                    const y = event.clientY - rect.top;
+
+                    const rotateY = ((x - rect.width / 2) / rect.width) * strength;
+                    const rotateX = -((y - rect.height / 2) / rect.height) * strength;
+
+                    card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+                    card.style.boxShadow = "0 25px 60px rgba(0, 255, 255, 0.35)";
+                });
+
+                card.addEventListener("mouseleave", () => {
+                    card.style.transform = "rotateX(0deg) rotateY(0deg) scale(1)";
+                    card.style.boxShadow = "";
+                });
+            });
+        }
+
+        // Address Book using localStorage
+        const ADDRESS_KEY = "bulkbase_addresses";
+        const addressModal = document.getElementById("address-modal");
+        const addressList = document.getElementById("address-list");
+        const openAddressBookBtn = document.getElementById("open-address-book");
+        const closeAddressBookBtn = document.getElementById("close-address-book");
+        const saveAddressBtn = document.getElementById("save-address");
+        const labelInput = document.getElementById("addr-label");
+        const modalAddressInput = document.getElementById("addr-address");
+        const modalCityInput = document.getElementById("addr-city");
+        const modalPostalInput = document.getElementById("addr-postal");
+        const modalCountryInput = document.getElementById("addr-country");
+
+        function getAddresses() {
+            try {
+                return JSON.parse(localStorage.getItem(ADDRESS_KEY)) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveAddresses(list) {
+            localStorage.setItem(ADDRESS_KEY, JSON.stringify(list));
+        }
+
+        function fillFormFromAddress(addr) {
+            if (!addr) return;
+            if (addr.address) addressInput.value = addr.address;
+            if (addr.city) cityInput.value = addr.city;
+            if (addr.postal) postalInput.value = addr.postal;
+            if (addr.country) countryInput.value = addr.country;
+        }
+
+        function renderAddressList() {
+            const addresses = getAddresses();
+            addressList.innerHTML = "";
+
+            if (!addresses.length) {
+                addressList.innerHTML = "<p class='text-gray-400 text-sm'>No saved addresses yet. Add one below.</p>";
+                return;
+            }
+
+            addresses.forEach((addr, index) => {
+                const div = document.createElement("div");
+                div.className = "bg-gray-800/70 border border-gray-700 rounded-xl p-4 flex justify-between items-start mb-3";
+                div.innerHTML = `
+                <div>
+                    <p class="font-semibold text-white">${addr.label || "Address " + (index + 1)}</p>
+                    <p class="text-gray-300 text-sm">${addr.address || ""}</p>
+                    <p class="text-gray-400 text-xs">${addr.city || ""} ${addr.postal || ""} ${addr.country || ""}</p>
+                </div>
+                <button data-index="${index}" class="use-address px-3 py-2 rounded-lg bg-cyan-500 text-black text-sm font-semibold hover:bg-cyan-400">Use</button>
+            `;
+                addressList.appendChild(div);
+            });
+
+            addressList.querySelectorAll(".use-address").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const idx = parseInt(btn.getAttribute("data-index"), 10);
+                    const addresses = getAddresses();
+                    fillFormFromAddress(addresses[idx]);
+                    hideAddressModal();
+                });
+            });
+        }
+
+        function showAddressModal() {
+            renderAddressList();
+            addressModal.classList.remove("hidden");
+            addressModal.classList.add("flex");
+        }
+
+        function hideAddressModal() {
+            addressModal.classList.add("hidden");
+            addressModal.classList.remove("flex");
+        }
+
+        if (openAddressBookBtn) openAddressBookBtn.addEventListener("click", showAddressModal);
+        if (closeAddressBookBtn) closeAddressBookBtn.addEventListener("click", hideAddressModal);
+
+        if (saveAddressBtn) saveAddressBtn.addEventListener("click", () => {
+            const label = labelInput.value.trim() || "Saved Address";
+            const address = modalAddressInput.value.trim();
+            const city = modalCityInput.value.trim();
+            const postal = modalPostalInput.value.trim();
+            const country = modalCountryInput.value.trim();
+
+            if (!address || !city || !postal || !country) {
+                showMessage("Please fill all address fields before saving.", true);
+                return;
+            }
+
+            const addresses = getAddresses();
+            addresses.push({ label, address, city, postal, country });
+            saveAddresses(addresses);
+
+            labelInput.value = "";
+            modalAddressInput.value = "";
+            modalCityInput.value = "";
+            modalPostalInput.value = "";
+            modalCountryInput.value = "";
+
+            renderAddressList();
+            showMessage("Address saved successfully!");
+        });
+
+        //  Place Order: loading → success → save → clear cart → review/home
+        placeOrderBtn.addEventListener("click", () => {
+
+            if (!cart.length) {
+                showMessage("Your cart is empty.", true);
+                return;
+            }
+
+            loadingOverlay.classList.remove("hidden");
+
+            animateStep(2);
+
+            setTimeout(() => {
+
+                loadingOverlay.classList.add("hidden");
+                showMessage("Order Placed Successfully!");
+                animateStep(3);
+
+                saveOrder();  // <-- Correct call here
+
+                if (window.showLuxuryReview) {
+                    window.showLuxuryReview();
+                } else {
+                    window.location.href = "index.html";
+                }
+
+            }, 2000);
+        });
+
+
+        /* =========================================================
+  REAL ORDER SAVE SYSTEM 
+  ========================================================= */
+        function saveOrder() {
+
+            // 🔹 Capture cart BEFORE clearing
+            const storedCart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+            if (!storedCart.length) return;
+
+            // 🔹 Compute order value
+            let subtotalCalc = 0;
+            storedCart.forEach(item => subtotalCalc += item.price * item.quantity);
+
+            // 🔹 Build saved order object
+            const newOrder = {
+                id: "BB-" + Math.floor(Math.random() * 9000 + 1000),
+                date: new Date().toISOString().split("T")[0],
+                status: "Delivered",
+                items: storedCart,
+                total: subtotalCalc
+            };
+
+            // 🔹 Read existing history
+            let orders = JSON.parse(localStorage.getItem("orders") || "[]");
+
+            // 🔹 Save newest first
+            orders.unshift(newOrder);
+
+            // 🔹 Store properly
+            localStorage.setItem("orders", JSON.stringify(orders));
+
+            // 🔹 Clear cart safely
+            localStorage.removeItem("cart");
+        }
+
+
+
+        //  Old review-modal hooks (safe no-op)
+        if (reviewStarsWrap) {
+            const starButtons = reviewStarsWrap.querySelectorAll("button[data-rating]");
+            starButtons.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    selectedRating = parseInt(btn.dataset.rating, 10) || 0;
+                    starButtons.forEach(b => {
+                        b.classList.remove("bg-cyan-500", "text-black", "border-cyan-400");
+                    });
+                    btn.classList.add("bg-cyan-500", "text-black", "border-cyan-400");
+                });
+            });
+        }
+
+        function goHome() {
+            window.location.href = "index.html";
+        }
+
+        if (submitReviewBtn) {
+            submitReviewBtn.addEventListener("click", () => {
+                const text = oldReviewText ? oldReviewText.value.trim() : "";
+                const ratingToSave = selectedRating || 5;
+
+                const reviews = JSON.parse(localStorage.getItem("bulkbase_reviews") || "[]");
+                reviews.unshift({
+                    rating: ratingToSave,
+                    text,
+                    date: new Date().toISOString()
+                });
+                localStorage.setItem("bulkbase_reviews", JSON.stringify(reviews));
+
+                goHome();
+            });
+        }
+
+        if (skipReviewBtn) {
+            skipReviewBtn.addEventListener("click", () => {
+                goHome();
+            });
+        }
+    </script>
+
+    <!--  GOOGLE AUTOCOMPLETE -->
+    <script type="module">
+        let autocomplete;
+
+        function initAddressAutocomplete() {
+            const addressField = document.getElementById("address");
+            if (!addressField || !window.google || !google.maps || !google.maps.places) return;
+
+            autocomplete = new google.maps.places.Autocomplete(addressField, {
+                types: ["geocode"],
+                fields: ["address_components", "formatted_address"],
+            });
+
+            autocomplete.addListener("place_changed", fillAdvancedAddressFields);
+        }
+
+        function fillAdvancedAddressFields() {
+            if (!autocomplete) return;
+            const place = autocomplete.getPlace();
+            if (!place || !place.address_components) return;
+
+            const fieldIDs = ["street_number", "route", "district", "city", "state", "postal", "country"];
+            fieldIDs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = "";
+            });
+
+            place.address_components.forEach(component => {
+                const types = component.types;
+
+                if (types.includes("street_number")) {
+                    const el = document.getElementById("street_number");
+                    if (el) el.value = component.long_name;
+                }
+                if (types.includes("route")) {
+                    const el = document.getElementById("route");
+                    if (el) el.value = component.long_name;
+                }
+                if (types.includes("sublocality") || types.includes("administrative_area_level_3")) {
+                    const el = document.getElementById("district");
+                    if (el) el.value = component.long_name;
+                }
+                if (types.includes("locality") || types.includes("administrative_area_level_2")) {
+                    const el = document.getElementById("city");
+                    if (el) el.value = component.long_name;
+                }
+                if (types.includes("administrative_area_level_1")) {
+                    const el = document.getElementById("state");
+                    if (el) el.value = component.long_name;
+                }
+                if (types.includes("postal_code")) {
+                    const el = document.getElementById("postal");
+                    if (el) el.value = component.long_name;
+                }
+                if (types.includes("country")) {
+                    const el = document.getElementById("country");
+                    if (el) el.value = component.long_name;
+                }
+            });
+
+            const addr = document.getElementById("address");
+            if (addr && place.formatted_address) {
+                addr.value = place.formatted_address;
+            }
+        }
+
+        window.addEventListener("load", initAddressAutocomplete);
+    </script>
+
+    <!-- Review Sent Toast -->
+    <div id="review-toast"
+        class="fixed bottom-6 right-6 bg-cyan-500 text-black font-bold px-6 py-3 rounded-xl shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-[99999] translate-y-4">
+        Review sent successfully!
+    </div>
+
+</body>
+
+</html>
